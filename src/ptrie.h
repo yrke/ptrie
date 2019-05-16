@@ -31,6 +31,7 @@
 #include <stack>
 #include <string.h>
 #include <functional>
+#include <memory>
 
 #include "binarywrapper.h"
 #include "linked_bucket.h"
@@ -140,9 +141,9 @@ namespace ptrie {
             }
         } __attribute__((packed));
 
-        linked_bucket_t<entry_t, ALLOCSIZE>* _entries = nullptr;
+        std::shared_ptr<linked_bucket_t<entry_t, ALLOCSIZE>> _entries = nullptr;
 
-        fwdnode_t* _root;
+        std::shared_ptr<fwdnode_t> _root;
     protected:
         node_t* new_node();
         fwdnode_t* new_fwd();
@@ -185,7 +186,7 @@ namespace ptrie {
     template<PTRIETPL>
     set<HEAPBOUND, SPLITBOUND, ALLOCSIZE, T, I>::~set() {
         std::stack<fwdnode_t*> stack;
-        stack.push(_root);
+        stack.push(_root.get());
         while(!stack.empty())
         {
             fwdnode_t* next = stack.top();
@@ -209,27 +210,29 @@ namespace ptrie {
                     }
                 }
             }
-            delete next;
+            if(_root.get() != next)
+                delete next;
         }
-       delete _entries;
+        _entries = nullptr;
+        _root = nullptr;
     }
 
     template<PTRIETPL>
     void set<HEAPBOUND, SPLITBOUND, ALLOCSIZE, T, I>::init()
     {
-        delete _entries;
+        _entries = nullptr;
         if(_entries != nullptr)
         {
-            _entries = new linked_bucket_t<entry_t, ALLOCSIZE>(1);
+            _entries = std::make_unique<linked_bucket_t<entry_t, ALLOCSIZE>>(1);
         }
 
-        _root = new_fwd();
+        _root = std::unique_ptr<fwdnode_t>(new_fwd());
         _root->_parent = nullptr;
         _root->_type = 255;
         _root->_path = 0;
 
         size_t i = 0;
-        for (; i < 256; ++i) (*_root)[i] = _root;
+        for (; i < 256; ++i) (*_root)[i] = _root.get();
     }
 
     template<PTRIETPL>
@@ -835,7 +838,7 @@ namespace ptrie {
 
         uint b_index = 0;
 
-        fwdnode_t* fwd = _root;
+        fwdnode_t* fwd = _root.get();
         base_t* base = nullptr;
         uint byte = 0;
 
@@ -864,7 +867,7 @@ namespace ptrie {
 
         uint b_index = 0;
 
-        fwdnode_t* fwd = _root;
+        fwdnode_t* fwd = _root.get();
         node_t* node = nullptr;
         base_t* base = nullptr;
         uint byte = 0;
@@ -1155,7 +1158,7 @@ namespace ptrie {
                 for(size_t i = 0; i < 256; ++i) parent->_children[i] = parent;
                 delete node;
                 do {
-                    if (parent != this->_root) {
+                    if (parent != this->_root.get()) {
                         // we can remove fwd and go back one level
                         parent->_parent->_children[parent->_path] = parent->_parent;
                         ++on_heap;
@@ -1199,10 +1202,10 @@ namespace ptrie {
                     }
                 } while(true);
             }
-            else if(parent != this->_root)
+            else if(parent != this->_root.get())
             {
                 // we need to re-add path to items here.
-                if(parent->_parent == this->_root) {
+                if(parent->_parent == this->_root.get()) {
                     // something
                     uint16_t sizes[256];
                     size_t totsize = 0;
@@ -1240,7 +1243,7 @@ namespace ptrie {
                         uchar* l = (uchar*)&length;
                         fwdnode_t* tmp = parent;
 
-                        while(tmp != this->_root)
+                        while(tmp != this->_root.get())
                         {
                             l[0] = l[1];
                             l[1] = tmp->_path;
@@ -1295,7 +1298,7 @@ namespace ptrie {
                     return merge_down(next, node, on_heap + 1);
                 }
             }
-            if(parent != this->_root)
+            if(parent != this->_root.get())
             {
                 assert(node->_count > 0);
                 return merge_down(parent->_parent, node, on_heap);
@@ -1419,7 +1422,7 @@ namespace ptrie {
         // first find size and amount before
         uint16_t size = 0;
         uint16_t before = 0;
-        if (parent == this->_root)
+        if (parent == this->_root.get())
         {
             for(size_t i = 0; i < bindex; ++i)
             {
@@ -1427,7 +1430,7 @@ namespace ptrie {
             }
             size = node->_data->first(node->_count, bindex);
         }
-        else if(parent->_parent == this->_root) {
+        else if(parent->_parent == this->_root.get()) {
              for(size_t i = 0; i <= bindex; ++i)
              {
                  uint16_t t = 0;
@@ -1517,7 +1520,7 @@ namespace ptrie {
         assert(encoding.size() <= 65536);
         uint b_index = 0;
 
-        fwdnode_t* fwd = this->_root;
+        fwdnode_t* fwd = this->_root.get();
         base_t* base = nullptr;
         uint byte = 0;
 
