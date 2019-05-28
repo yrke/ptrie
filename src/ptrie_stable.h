@@ -37,12 +37,14 @@ namespace ptrie {
     typename T = void,
     typename I = size_t
     >
-    class set_stable : public set<HEAPBOUND, SPLITBOUND, ALLOCSIZE, T, I> {
+    class set_stable : public set<HEAPBOUND, SPLITBOUND, ALLOCSIZE, T, true, I> {
 #ifdef __APPLE__
-#define pt set<HEAPBOUND, SPLITBOUND, ALLOCSIZE, T, I>
+#define pt set<HEAPBOUND, SPLITBOUND, ALLOCSIZE, T, true, I>
 #else
-        using pt = set<HEAPBOUND, SPLITBOUND, ALLOCSIZE, T, I>;
+        using pt = set<HEAPBOUND, SPLITBOUND, ALLOCSIZE, T, true, I>;
 #endif
+    protected:
+        virtual bool uses_entries() const { return true; }
     public:
         set_stable() : pt()
         {
@@ -56,7 +58,7 @@ namespace ptrie {
         size_t unpack(I index, uchar* destination);
   };
 
-    template<PTRIETPL>
+    template<uint16_t HEAPBOUND,uint16_t SPLITBOUND,size_t ALLOCSIZE,typename T,typename I>
     size_t
     set_stable<HEAPBOUND, SPLITBOUND, ALLOCSIZE, T, I>::unpack(I index, uchar* destination) {
         typename pt::node_t* node = nullptr;
@@ -72,7 +74,7 @@ namespace ptrie {
             par = (typename pt::fwdnode_t*)ent.node;
             node = (typename pt::node_t*)par->_children[ent.path];
             typename pt::bucket_t* bckt = node->_data;
-            I* ents = bckt->entries(node->_count, true);
+            I* ents = bckt->entries(node->_count);
             for (size_t i = 0; i < node->_count; ++i) {
                 if (ents[i] == index) {
                     bindex = i;
@@ -131,9 +133,9 @@ namespace ptrie {
         if (size > ps) {
             uchar* src;
             if ((size - ps) >= HEAPBOUND) {
-                src = *((uchar**)&(node->_data->data(node->_count, true)[offset]));
+                src = *((uchar**)&(node->_data->data(node->_count)[offset]));
             } else {
-                src = &(node->_data->data(node->_count, true)[offset]);
+                src = &(node->_data->data(node->_count)[offset]);
             }
 
             memcpy(&(destination[ps]), src, (size - ps));

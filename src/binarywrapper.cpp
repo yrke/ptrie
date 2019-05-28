@@ -22,8 +22,6 @@
  * Created on 10 June 2015, 19:20
  */
 
-#include <sstream>
-
 #include "binarywrapper.h"
 namespace ptrie
 {
@@ -79,7 +77,7 @@ namespace ptrie
     }
     
     binarywrapper_t::binarywrapper_t
-        (uchar* raw, uint size, uint offset, uint encodingsize)
+        (uchar* org, uint size, uint offset, uint encodingsize)
     {
         if(size == 0 || offset >= encodingsize)
         {
@@ -100,27 +98,27 @@ namespace ptrie
             return;
         }
 
-        uchar* tmp = &(raw[offset]);
+        uchar* tmp = &(org[offset]);
         if(_nbytes <= __BW_BSIZE__)
         {
-            memcpy(const_raw(), tmp, _nbytes);            
+            memcpy(raw(), tmp, _nbytes);            
         }
         else
         {
             _blob = tmp;
         }
-        assert(raw[offset] == const_raw()[0]);
+        assert(org[offset] == raw()[0]);
 
     }
     
     
-    binarywrapper_t::binarywrapper_t(uchar* raw, uint size)
+    binarywrapper_t::binarywrapper_t(uchar* org, uint size)
     {
         _nbytes = size / 8 + (size % 8 ? 1 : 0);     
-        _blob = raw;
+        _blob = org;
         
         if(_nbytes <= __BW_BSIZE__)
-            memcpy(const_raw(), raw, _nbytes);
+            memcpy(raw(), org, _nbytes);
         
 //        assert(raw[0] == const_raw()[0]);
     }
@@ -153,13 +151,11 @@ namespace ptrie
     
     void binarywrapper_t::print(std::ostream& stream, size_t length) const
     {
-        std::stringstream ss;
-        ss << _nbytes << " bytes : ";
+        stream << _nbytes << " bytes : ";
         for (size_t i = 0; i < _nbytes * 8 && i < length; i++) {
-            if (i % 8 == 0 && i != 0) ss << "-";
-            ss << this->at(i);
+            if (i % 8 == 0 && i != 0) stream << "-";
+            stream << this->at(i);
         }
-        stream << ss.str();
     }
 }
 
