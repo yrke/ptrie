@@ -33,12 +33,11 @@
 #ifndef BINARYWRAPPER_H
 #define	BINARYWRAPPER_H
 
-#define __BW_BSIZE__ sizeof(size_t) // SIZE OF POINTER!
 namespace ptrie
 {
     typedef unsigned int uint;
     typedef unsigned char uchar;
-    
+    constexpr auto __BW_BSIZE__ = sizeof(size_t); // SIZE OF POINTER!
     /**
      * Wrapper for binary data. This provides easy access to individual bits, 
      * heap allocation and comparison. Notice that one has to make sure to 
@@ -95,11 +94,11 @@ namespace ptrie
 	
 	/**
          * Assign (not copy) raw data to pointer. Set number of bytes to size
-         * @param raw: some memory to point to
+         * @param org: some memory to point to
          * @param size: number of bytes.
          */
         
-        binarywrapper_t(uchar* raw, uint size);
+        binarywrapper_t(uchar* org, uint size);
         
         /**
          * Empty destructor. Does NOT deallocate data - do this with explicit
@@ -131,11 +130,11 @@ namespace ptrie
         /**
          * Copy over size bytes form raw data. Assumes that current wrapper has
          * enough room.
-         * @param raw: source data
+         * @param org: source data
          * @param size: number of bytes to copy
          */
 
-        void copy(const uchar* raw, uint size);
+        void copy(const uchar* org, uint size);
 
         // accessors
         /**
@@ -170,7 +169,7 @@ namespace ptrie
          * @return 
          */
         
-        inline uchar* const_raw() const
+        inline const uchar* const_raw() const
         {
             if(_nbytes <= __BW_BSIZE__) return offset((uchar*)&_blob, _nbytes);
             else 
@@ -184,7 +183,7 @@ namespace ptrie
                
         inline uchar* raw()
         {
-            return const_raw();
+            return const_cast<uchar*>(const_raw());
         }
 
         /**
@@ -211,15 +210,15 @@ namespace ptrie
          * @param value: desired value
          */
         
-        inline void set(const uint place, const bool value) const
+        inline void set(const uint place, const bool value)
         {
             assert(place < _nbytes*8);
             uint offset = place % 8;
             uint theplace = place / 8;
             if (value) {
-                const_raw()[theplace] |= _masks[offset];
+                raw()[theplace] |= _masks[offset];
             } else {
-                const_raw()[theplace] &= ~_masks[offset];
+                raw()[theplace] &= ~_masks[offset];
             }    
         }   
         
@@ -227,11 +226,11 @@ namespace ptrie
          * Sets all memory on heap to 0 
          */
         
-        inline void zero() const
+        inline void zero()
         {
             if(_nbytes > 0 && _blob != nullptr)
             {
-                memset(const_raw(), 0x0, _nbytes); 
+                memset(raw(), 0x0, _nbytes); 
             }
         }
         
@@ -349,7 +348,7 @@ namespace ptrie
             return enc2 <= enc1;
         }
         
-        const static uchar _masks[8];
+	const static uchar _masks[8];
     private:
          
         static inline uchar* allocate(size_t n)
@@ -393,10 +392,10 @@ namespace ptrie
         }
         
         // blob of heap-allocated data
-        uchar* _blob;
+        uchar* _blob = nullptr;
             
         // number of bytes allocated on heap
-        uint16_t _nbytes;
+        uint16_t _nbytes = 0;
                
         // masks for single-bit access
      } __attribute__((packed));
