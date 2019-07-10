@@ -2,6 +2,14 @@ cmake_minimum_required(VERSION 3.9)
 
 cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0069 NEW)
+
+# For user-defined boost-versions (requires 3.12.0)
+if (${CMAKE_VERSION} VERSION_LESS "3.12.0" )
+else()
+	cmake_policy(SET CMP0074 NEW)
+endif()
+
+
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
